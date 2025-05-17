@@ -36,3 +36,6 @@ To train and test the network with the CORA dataset.
 ```bash
 python main.py
 ```
+## Results
+
+The overall accuracy is 85.86%
