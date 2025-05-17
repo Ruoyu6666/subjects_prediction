@@ -3,7 +3,7 @@ import pandas as pd
 import tensorflow as tf
 import networkx as nx
 from sklearn.model_selection import KFold
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, LabelBinarizer
 
 
 
@@ -51,7 +51,7 @@ def get_node_features(graph):
         node_features.append(graph.nodes[node]['feature'])
     
     # Convert to numpy array
-    return np.array(node_features)
+    return np.array(node_features, dtype=int)
 
 
 
@@ -69,21 +69,14 @@ def get_node_labels(graph):
 
 
 
-def get_encoded_labels(graph):
+def get_encoded_labels(labels):
     """
-    Get the encoded labels from the graph.
+    Encode the labels using LabelEncoder
     """
-    # Get the node labels
-    node_labels = get_node_labels(graph)
-    
-    # Encode the labels
-    onehot_encoder = OneHotEncoder(sparse_output=False)
-    y_onehot = onehot_encoder.fit_transform(node_labels.reshape(-1, 1))
-    
     label_encoder = LabelEncoder()
-    y_encoded = label_encoder.fit_transform(node_labels)
-
-    return y_onehot, y_encoded
+    labels = label_encoder.fit_transform(labels)
+    labels = tf.keras.utils.to_categorical(labels)
+    return labels, label_encoder.classes_
 
 
 
@@ -99,11 +92,15 @@ def get_symmetric_normalized_adjacency(adj_matrix):
     """
     Get the symmetric normalized adjacency matrix.
     """
-    A_hat = adj_matrix + np.eye(adj_matrix.shape[0])
-    D_inv = tf.linalg.tensor_diag(tf.pow(tf.reduce_sum(A_hat, 0), tf.cast(-0.5, tf.float32)))
-    D_inv = tf.where(tf.math.is_inf(D_inv), tf.zeros_like(D_inv), D_inv)
+    adj_matrix = adj_matrix + np.eye(adj_matrix.shape[0])
 
-    return  D_inv @ A_hat @ D_inv
+    # Normalize adjacency matrix
+    rowsum = np.array(adj_matrix.sum(1))
+    d_inv_sqrt = np.power(rowsum, -0.5).flatten()
+    d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.
+    d_mat_inv_sqrt = np.diag(d_inv_sqrt)
+
+    return  adj_matrix.dot(d_mat_inv_sqrt).transpose().dot(d_mat_inv_sqrt)
 
 
 def save_predictions(paper_ids, predicted_labels, filename="gcn_predictions.tsv"):
