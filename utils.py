@@ -2,8 +2,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import networkx as nx
-from sklearn.model_selection import KFold
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, LabelBinarizer
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
 
 
@@ -14,7 +13,6 @@ def load_data(content_path, cites_path):
     cites_df = pd.read_csv('./cora/cora.cites', sep='\t',header=None, names=["start", "end"]) 
     content_df = pd.read_csv('./cora/cora.content', sep='\t', header=None)
     return content_df, cites_df
-
 
 
 def get_graph(content_df, cites_df):
@@ -102,9 +100,10 @@ def get_symmetric_normalized_adjacency(adj_matrix):
 
     return  adj_matrix.dot(d_mat_inv_sqrt).transpose().dot(d_mat_inv_sqrt)
 
-
+'''
 def save_predictions(paper_ids, predicted_labels, filename="gcn_predictions.tsv"):
     with open(filename, 'w') as f:
         for pid, label in zip(paper_ids, predicted_labels):
             f.write(f"{pid}\t{label}\n")
     print(f"Predictions saved to {filename}")
+'''

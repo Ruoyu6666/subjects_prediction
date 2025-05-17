@@ -5,10 +5,8 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import CategoricalCrossentropy
-from tensorflow.keras.metrics import Accuracy
-from sklearn.metrics import classification_report
-from src.utils import *
-from src.gcn_model import *
+from utils import *
+from gcn_model import *
 
 
 load_dotenv()
@@ -16,6 +14,7 @@ load_dotenv()
 CONTENT_PATH = os.getenv('CONTENT_PATH')
 CITES_PATH = os.getenv('CITES_PATH')
 PREDICTIONS_PATH = os.getenv('PREDICTIONS_PATH')
+
 
 
 if __name__ == "__main__":
@@ -27,13 +26,15 @@ if __name__ == "__main__":
 
     print("Loading data...")
     content_df, cites_df = load_data(CONTENT_PATH, CITES_PATH)
-    paper_ids = content_df.iloc[:, 0].values # list of paper ids
     graph = get_graph(content_df, cites_df)  # create graph from dataframes
+
+    paper_ids = content_df.iloc[:, 0].values # list of paper ids
+    id_map = {paper_id: i for i, paper_id in enumerate(paper_ids)}
 
     # Get node features
     features = get_node_features(graph) # get node features, shape (N, F)
     N = features.shape[0]               # number of nodes
-    feature_dim = features.shape[1]
+    feature_dim = features.shape[1]     # feature dimension
 
     #Get raw labels
     labels = get_node_labels(graph)
@@ -49,12 +50,14 @@ if __name__ == "__main__":
     A = tf.convert_to_tensor(A, tf.float32)
     
     
-    all_preds = np.zeros(len(labels), dtype=int)
+    all_preds = [None] * len(labels)
+    predictions = np.zeros(len(labels), dtype=int)
     all_paper_ids = []
     all_pred_labels = []
     all_true_labels = []
-    fold_accuracies = []
+    accuracies = []
 
+    # for each fold, train and evaluate the model
     kf = KFold(n_splits=num_folds, shuffle=True, random_state=42)
     for fold, (train_index, test_index) in enumerate(kf.split(features, y_encoded)):
         print(f"Fold {fold + 1}/{num_folds}")
@@ -78,41 +81,27 @@ if __name__ == "__main__":
         optimizer = Adam(learning_rate=learning_rate)
         model.compile(optimizer=optimizer, loss='categorical_crossentropy', weighted_metrics=['acc'])
 
-
         # Train the model
         model.fit(features, y_encoded, sample_weight=train_mask, epochs=epochs, batch_size=N, shuffle=False)
         
         # Evaluate the model
         preds = model.predict(features, batch_size=N)
         pred_classes = np.argmax(preds, axis=1)
-
-        report = classification_report(np.argmax(test_labels, axis=1), 
-                                        np.argmax(preds[test_mask],axis=1), 
-                                        target_names=classes)    
+        test_ids_map = [id_map[k] for k in test_ids if k in id_map]
         
-        #all_preds[test_index] = predicted_classes
-        #all_paper_ids.extend(test_ids)
-        #all_predicted_labels.extend([list(label_map.keys())[list(label_map.values()).index(pred)] for pred in predicted_classes])
-        
-        #print(f"Fold {fold + 1} Test Accuracy: {test_accuracy:.4f}")
-        print('GCN Classification Report: \n {}'.format(report))
-        #fold_accuracies.append(test_accuracy)
+        acc = accuracy_score(np.argmax(test_labels, axis=1),np.argmax(preds[test_mask],axis=1))
+        print(f"Fold {fold + 1} Test Accuracy: {acc:.4f}")
+        accuracies.append(acc)
+        for id in test_ids_map:
+            predictions[id] = pred_classes[id]
+            all_preds[id] = (paper_ids[id], classes[pred_classes[id]], labels[id])
 
-    #save_predictions(all_paper_ids, all_predicts)
+with open(PREDICTIONS_PATH, "w") as f:
+    f.write("paper_id\tpredicted_label\ttrue_label\n")
+    for paper_id, pred_label, true_label in all_preds:
+        f.write(f"{paper_id}\t{pred_label}\t{true_label}\n")
 
-
-    #overall_accuracy = accuracy_score(np.argmax(labels_onehot, axis=1), np.argmax(all_preds, axis=1))
-    #print(f"\nOverall GCN Accuracy: {overall_accuracy:.4f}")
-
-    '''
-    predictions, predicted_ids, overall_accuracy, fold_accuracies = train_and_evaluate(
-        paper_ids, node_features, node_labels, y_onehot, y_encoded, num_classes,
-        A, n_splits=10, epochs=200, learning_rate=0.01
-    )
-
-    output_df = pd.DataFrame({'paper_id': predicted_ids, 'class_label': predictions})
-    output_file = 'cora_gcn_predictions.tsv'
-    output_df.to_csv(output_file, sep='\t', index=False, header=False)
-    print(f"\nPredictions saved to {output_file}")
-    print(f"\nOverall GCN Accuracy: {overall_accuracy:.4f}")
-    '''
+#print(f"Average Accuracy: {np.mean(accuracies) * 100:.2f}%")
+overall_accuracy = accuracy_score(np.argmax(y_encoded, axis=1), predictions)
+print(f"\nOverall Accuracy: {overall_accuracy * 100:.2f}%")
+print(f"Predictions saved to {PREDICTIONS_PATH}")
