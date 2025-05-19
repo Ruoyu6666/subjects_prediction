@@ -20,6 +20,12 @@ Where:
 - $\tilde{A} = A + I$ is the adjacency matrix with self-loops added,
 - $\tilde{D}$ is the degree matrix of $\tilde{A}$.
 
+### Model Architecture
+- GCN Layer 1: Transforms input features into a hidden representation.
+- ReLU Activation
+- GCN Layer 2: Maps hidden representation to class scores.
+- Softmax is applied to the output for classification.
+
 ## Requirements
 - dotenv
 - pandas
@@ -38,4 +44,4 @@ python main.py
 ```
 ## Results
 
-The overall accuracy is 85.86%
+The overall accuracy is 86.08%
