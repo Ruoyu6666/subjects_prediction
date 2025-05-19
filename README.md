@@ -44,4 +44,10 @@ python main.py
 ```
 ## Results
 
+### Output
+All predictions are saved to output/predictions.tsv with columns:
+- paper_id
+- predicted_label
+- true_label
+
 The overall accuracy is 86.08%
