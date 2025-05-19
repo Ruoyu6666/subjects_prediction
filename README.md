@@ -14,11 +14,11 @@ $$
 
 Where:
 
-- $ H^{(l)} $ is the node feature matrix at layer $ l $ (with $ H^{(0)} = X $, the input features),
-- $ W^{(l)} $ is the trainable weight matrix for layer $ l $,
-- $ \sigma $ is an activation function (e.g., ReLU),
-- $ \tilde{A} = A + I $ is the adjacency matrix with self-loops added,
-- $ \tilde{D} $ is the degree matrix of $ \tilde{A} $.
+- $H^{(l)}$ is the node feature matrix at layer $l$ (with $H^{(0)} = X$, the input features),
+- $W^{(l)}$ is the trainable weight matrix for layer $l$,
+- $\sigma$ is an activation function (e.g., ReLU),
+- $\tilde{A} = A + I$ is the adjacency matrix with self-loops added,
+- $\tilde{D}$ is the degree matrix of $\tilde{A}$.
 
 ## Requirements
 - dotenv
