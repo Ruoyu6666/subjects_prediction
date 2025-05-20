@@ -1,4 +1,5 @@
 import os
+import argparse
 from dotenv import load_dotenv
 
 from sklearn.model_selection import KFold
@@ -18,11 +19,14 @@ PREDICTIONS_PATH = os.getenv('PREDICTIONS_PATH')
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Graph Convolutional Network for Node Classification")
+    parser.add_argument("-epochs", dest="epochs", type=int, default=50,
+                        help="Number of epochs to train the model")
+    parser.add_argument("-lr", dest="learning_rate", type=float, default=0.01,
+                        help="Learning rate for the optimizer")
+    args = parser.parse_args()
 
     num_folds = 10
-    epochs = 50
-    learning_rate = 0.01
-    rate = 0.2
 
     print("Loading data...")
     content_df, cites_df = load_data(CONTENT_PATH, CITES_PATH)
@@ -78,11 +82,11 @@ if __name__ == "__main__":
         gcn2 = GraphConvolution(A, num_classes, activation='softmax')(gcn1)
         model = Model(inputs=x_input, outputs=gcn2)
 
-        optimizer = Adam(learning_rate=learning_rate)
+        optimizer = Adam(learning_rate=args.learning_rate)
         model.compile(optimizer=optimizer, loss='categorical_crossentropy', weighted_metrics=['acc'])
 
         # Train the model
-        model.fit(features, y_encoded, sample_weight=train_mask, epochs=epochs, batch_size=N, shuffle=False)
+        model.fit(features, y_encoded, sample_weight=train_mask, epochs=args.epochs, batch_size=N, shuffle=False)
         
         # Evaluate the model
         preds = model.predict(features, batch_size=N)
