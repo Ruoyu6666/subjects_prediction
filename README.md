@@ -40,7 +40,7 @@ Where:
 To train and test the network with the CORA dataset.
 
 ```bash
-python main.py
+python main.py -epochs 50 -lr 0.01
 ```
 ## Results
 
@@ -50,4 +50,4 @@ All predictions are saved to output/predictions.tsv with columns:
 - predicted_label
 - true_label
 
-The overall accuracy is 86.08%
+The overall accuracy is 86.00%
